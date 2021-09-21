@@ -76,6 +76,7 @@ import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import com.reactnativecommunity.webview.RNCWebViewModule.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState;
+import com.reactnativecommunity.webview.events.TopBlobFileDownloadEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -211,6 +212,17 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
         webView.setIgnoreErrFailedForThisURL(url);
+
+        if (url.startsWith("blob")) {
+            WritableMap event = Arguments.createMap();
+            event.putString("url", url);
+            event.putString("contentDisposition", contentDisposition);
+            event.putString("mimetype", mimetype);
+            dispatchEvent(
+              webView,
+              new TopBlobFileDownloadEvent(webView.getId(), event));
+            return;
+        }
 
         RNCWebViewModule module = getModule(reactContext);
 
@@ -649,6 +661,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
     export.put(TopRenderProcessGoneEvent.EVENT_NAME, MapBuilder.of("registrationName", "onRenderProcessGone"));
+    export.put(TopBlobFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onBlobFileDownload"));
     return export;
   }
 
